@@ -21,8 +21,8 @@ def parse_biedronka_products() -> List[Dict]:
     """Parse product data from Biedronka bestsellers page."""
     
     if not DEPENDENCIES_AVAILABLE:
-        print("Warning: Web scraping dependencies not available. Install requirements.txt")
-        return generate_fallback_products()
+        print("Error: Web scraping dependencies not available. Install requirements.txt")
+        return []
     
     url = "https://home.biedronka.pl/bestsellery/"
     
@@ -67,7 +67,7 @@ def parse_biedronka_products() -> List[Dict]:
             price_pattern = re.compile(r'\d+[,.]?\d*\s*zł')
             all_elements = soup.find_all(text=price_pattern)
             if all_elements:
-                print(f"Found {len(all_elements)} price elements as fallback")
+                print(f"Found {len(all_elements)} price elements using pattern matching")
                 # Create basic products from price elements
                 for i, price_element in enumerate(all_elements[:20]):  # Limit to 20
                     parent = price_element.parent
@@ -102,18 +102,18 @@ def parse_biedronka_products() -> List[Dict]:
                     })
         
         if not products:
-            print("No products found, using fallback data")
-            return generate_fallback_products()
+            print("No products found on the website")
+            return []
             
         print(f"Successfully parsed {len(products)} products")
         return products
         
     except requests.RequestException as e:
         print(f"Network error: {e}")
-        return generate_fallback_products()
+        return []
     except Exception as e:
         print(f"Parsing error: {e}")
-        return generate_fallback_products()
+        return []
 
 
 def extract_product_name(element) -> Optional[str]:
@@ -199,37 +199,7 @@ def extract_price(text: str) -> Optional[float]:
     return None
 
 
-def generate_fallback_products() -> List[Dict]:
-    """Generate fallback product data when scraping fails."""
-    print("Using fallback data - sample Biedronka-style products")
-    
-    # Sample products that might be found on Biedronka
-    sample_products = [
-        {"name": "Mleko UHT 3,2% 1L", "price": 3.99},
-        {"name": "Chleb pszenno-żytni 500g", "price": 2.49},
-        {"name": "Masło extra 200g", "price": 5.99},
-        {"name": "Jogurt naturalny 150g", "price": 1.99},
-        {"name": "Ser żółty gouda 150g", "price": 4.99},
-        {"name": "Kiełbasa krakowska sucha", "price": 8.99},
-        {"name": "Pomidory świeże 1kg", "price": 6.99},
-        {"name": "Banany 1kg", "price": 4.99},
-        {"name": "Detergent do prania 2L", "price": 12.99},
-        {"name": "Papier toaletowy 8 rolek", "price": 9.99}
-    ]
-    
-    products = []
-    for i, item in enumerate(sample_products):
-        products.append({
-            "id": i + 1,
-            "name": item["name"],
-            "price": item["price"],
-            "currency": "PLN",
-            "category": "Bestseller",
-            "in_stock": True,
-            "source": "fallback"
-        })
-    
-    return products
+
 
 
 def main():
@@ -237,6 +207,15 @@ def main():
     
     # Parse products from Biedronka website
     products = parse_biedronka_products()
+    
+    if not products:
+        print("No products were successfully parsed from Biedronka website")
+        print("This could be due to:")
+        print("- Missing dependencies (install requirements.txt)")
+        print("- Network connectivity issues")
+        print("- Website structure changes")
+        print("- Site access restrictions")
+        return None
     
     # Create output data structure
     output_data = {
