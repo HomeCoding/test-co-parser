@@ -1,0 +1,53 @@
+name: Run ParserApp
+
+on:
+  workflow_dispatch:
+    inputs:
+      product_count:
+        description: 'Number of products to generate'
+        required: false
+        default: '15'
+        type: string
+
+jobs:
+  run-parser:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Set up virtual environment and dependencies
+      run: |
+        make venv
+        make install || echo "Dependencies installation failed, continuing without external deps"
+      
+    - name: Run ParserApp
+      run: make run
+      
+    - name: Verify output
+      run: |
+        echo "Checking generated output..."
+        ls -la output/
+        echo "JSON file contents (first 20 lines):"
+        head -20 output/products.json
+        echo "File size: $(stat -c%s output/products.json) bytes"
+        
+    - name: Upload products JSON as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: products-json-${{ github.run_number }}
+        path: output/products.json
+        retention-days: 30
+        
+    - name: Upload all output as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: parser-output-${{ github.run_number }}
+        path: output/
+        retention-days: 30
